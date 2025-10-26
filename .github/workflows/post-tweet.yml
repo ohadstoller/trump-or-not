@@ -39,6 +39,7 @@ jobs:
           NEWS_API_KEY: ${{ secrets.NEWS_API_KEY }}
           NODE_ENV: production
           TIMEZONE: America/New_York
+          DRY_RUN: false
         run: npm start
       
       - name: Commit state changes
