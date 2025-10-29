@@ -9,6 +9,7 @@
     "dev": "ts-node src/index.ts",
     "dry-run": "DRY_RUN=true ts-node src/index.ts",
     "validate": "ts-node src/validate-setup.ts",
+    "debug:env": "ts-node src/debug-env.ts",
     "test:news": "ts-node src/test-news.ts",
     "test:openai": "ts-node src/test-openai.ts"
   },
