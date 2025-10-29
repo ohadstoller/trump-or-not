@@ -62,20 +62,37 @@ class TwitterService {
       return tweetUrl;
     } catch (error: unknown) {
       // Handle specific Twitter API errors
-      if (this.isTwitterError(error)) {
-        const errorData = error as { code?: number; data?: { detail?: string } };
+      logger.error('Failed to post tweet to Twitter', error);
+      
+      // Try to extract detailed error information
+      if (error && typeof error === 'object') {
+        const apiError = error as any;
         
-        if (errorData.code === 403) {
-          logger.error('Twitter authentication failed - check API credentials');
-        } else if (errorData.code === 429) {
-          logger.error('Twitter rate limit exceeded - wait before posting again');
-        } else if (errorData.data?.detail?.includes('duplicate')) {
-          logger.error('Duplicate tweet detected - content already posted');
+        // Log all available error details
+        if (apiError.code) {
+          logger.error(`Twitter API error code: ${apiError.code}`);
+        }
+        if (apiError.data) {
+          logger.error('Twitter API error data:', apiError.data);
+        }
+        if (apiError.errors) {
+          logger.error('Twitter API errors:', apiError.errors);
+        }
+        if (apiError.message) {
+          logger.error(`Twitter API error message: ${apiError.message}`);
+        }
+        
+        // Specific error handling
+        if (apiError.code === 403) {
+          logger.error('❌ Twitter 403 Forbidden - Check app permissions (must be Read+Write) and Elevated access');
+        } else if (apiError.code === 401) {
+          logger.error('❌ Twitter 401 Unauthorized - Check API credentials are correct');
+        } else if (apiError.code === 429) {
+          logger.error('❌ Twitter 429 Rate Limit - Too many requests, wait before retrying');
         }
       }
 
-      logger.error('Failed to post tweet to Twitter', error);
-      throw new Error('Failed to post tweet to Twitter');
+      throw new Error(`Failed to post tweet to Twitter: ${error}`);
     }
   }
 
@@ -88,24 +105,33 @@ class TwitterService {
       
       const user = await this.client.v2.me();
       
-      logger.info('Twitter credentials verified', {
+      logger.info('✅ Twitter credentials verified successfully!', {
         username: user.data.username,
         userId: user.data.id,
+        name: user.data.name,
       });
 
       return true;
     } catch (error) {
-      logger.error('Twitter credentials verification failed', error);
+      logger.error('❌ Twitter credentials verification failed', error);
+      
+      // Log detailed error information
+      if (error && typeof error === 'object') {
+        const apiError = error as any;
+        if (apiError.code === 403) {
+          logger.error('403 Forbidden: Your app may not have Elevated access or Read+Write permissions');
+        } else if (apiError.code === 401) {
+          logger.error('401 Unauthorized: Invalid API credentials - check all 4 credentials are correct');
+        }
+        if (apiError.data) {
+          logger.error('Error details:', apiError.data);
+        }
+      }
+      
       return false;
     }
   }
 
-  /**
-   * Type guard for Twitter API errors
-   */
-  private isTwitterError(error: unknown): error is { code?: number; data?: { detail?: string } } {
-    return typeof error === 'object' && error !== null;
-  }
 }
 
 // Export singleton instance
